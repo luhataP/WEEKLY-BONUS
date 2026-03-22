@@ -201,7 +201,7 @@ def main() -> None:
     game_over = False
     win = False
     paused = False
-    in_menu = True   # <-- IMPORTANT
+    in_menu = True   # IMPORTANT
 
     while running:
         clock.tick(FPS)
