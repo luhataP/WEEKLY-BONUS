@@ -177,6 +177,14 @@ def countdown(screen: pygame.Surface) -> None:
         pygame.display.flip()
         pygame.time.delay(1000)
 
+def draw_menu(screen: pygame.Surface) -> None:
+    screen.fill(BLACK)
+    draw_text(screen, "Brick Breaker", 60, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 3)
+    draw_text(screen, "Appuie sur ESPACE pour commencer", 32,
+              SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+    draw_text(screen, "Appuie sur ESC pour quitter", 28, 
+              SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 60)
+    pygame.display.flip()
 
 def main() -> None:
     pygame.init()
@@ -188,21 +196,40 @@ def main() -> None:
     ball = Ball()
     bricks = create_bricks()
     score = 0
+
     running = True
     game_over = False
     win = False
     paused = False
+    in_menu = True   # <-- IMPORTANT
 
     while running:
         clock.tick(FPS)
 
+        # --- ÉVÉNEMENTS ---
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-            if game_over or win:
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                    # Restart
+            # --- MENU PRINCIPAL ---
+            if in_menu:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        in_menu = False
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+                continue  # On reste dans le menu
+
+            # --- PAUSE ---
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:
+                    paused = not paused
+                    if not paused:
+                        countdown(screen)
+
+            # --- RESTART ---
+            if (game_over or win) and event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
                     paddle = Paddle()
                     ball = Ball()
                     bricks = create_bricks()
@@ -210,28 +237,26 @@ def main() -> None:
                     game_over = False
                     win = False
 
+        # --- AFFICHAGE DU MENU ---
+        if in_menu:
+            draw_menu(screen)
+            continue
+
+        # --- LOGIQUE DU JEU ---
         keys = pygame.key.get_pressed()
 
-        if not game_over and not win and not paused:
+        if not paused and not game_over and not win:
             paddle.update(keys)
             ball.update()
             score = handle_ball_collisions(ball, paddle, bricks, score)
 
-            # Perdu si la balle tombe
             if ball.rect.top > SCREEN_HEIGHT:
                 game_over = True
 
-            # Gagné si toutes les briques sont détruites
             if all(not brick.alive for brick in bricks):
                 win = True
 
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_p:
-                paused = not paused
-                if not paused:
-                    countdown(screen)
-
-        # Rendu
+        # --- RENDU ---
         screen.fill(BLACK)
 
         for brick in bricks:
@@ -242,22 +267,21 @@ def main() -> None:
 
         draw_text(screen, f"Score : {score}", 24, 80, 20)
 
+        if paused:
+            draw_text(screen, "PAUSE", 48, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+
         if game_over:
-            draw_text(screen, "Oh mince alors! C'est ballot. Appuie sur ESPACE pour rejouer", 28,
-                      SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
-        if win:
-            draw_text(screen, "GG l'ami ! Appuie sur ESPACE pour rejouer", 28,
+            draw_text(screen, "Oh bah mince alors! C'est ballot. ESPACE pour rejouer", 28,
                       SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
 
-        if paused:
-            draw_text(screen, "PAUSE", 48,
+        if win:
+            draw_text(screen, "GG l'ami! ESPACE pour rejouer", 28,
                       SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
 
         pygame.display.flip()
 
     pygame.quit()
     sys.exit()
-
 
 if __name__ == "__main__":
     main()
